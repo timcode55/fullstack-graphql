@@ -95,22 +95,35 @@ const typeDefs = gql`
     id: ID!
   }
   type Book {
-    title: String!
-    published: String!
-    author: String!
-    # genres: String!
-    id: ID!
+    title: String
+    published: String
+    author: String
+    genres: [String]
+    id: ID
   }
   type Query {
-    authors: [Author!]!
-    books: [Book!]!
+    allAuthors: [Author!]!
+    allBooks(author: String!): [Book]
+    bookCount: Int!
+    authorCount: Int!
   }
 `;
 
 const resolvers = {
   Query: {
-    authors: () => authors,
-    books: () => books
+    allAuthors: () => authors,
+    allBooks: (root, args) => books.filter((p) => p.author === args.author),
+    bookCount: (root, args) => {
+      if (!args.author) {
+        return books;
+      }
+      const output = authors.map(({ born, name }) => {
+        const bookCount = books.filter((b) => b.author === name).length;
+        console.log(bookCount, "BOOKCOUNT");
+        return { bookCount };
+      });
+    },
+    authorCount: () => authors.length
   }
 };
 
@@ -119,6 +132,6 @@ const server = new ApolloServer({
   resolvers
 });
 
-server.listen().then(({ url }) => {
-  console.log(`Server ready at ${url}`);
+server.listen(5000).then(() => {
+  console.log(`Server ready at 5000`);
 });

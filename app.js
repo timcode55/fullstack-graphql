@@ -94,6 +94,7 @@ const typeDefs = gql`
     name: String!
     born: String
     id: ID!
+    bookCount: Int
   }
   type Book {
     title: String
@@ -106,9 +107,14 @@ const typeDefs = gql`
     allAuthors: [Author!]!
     allBooks(author: String, genre: String): [Book]
     allBooksGenre(genre: String!): [Book]
-    bookCount: Int!
+    bookCount: [Author]
     authorCount: Int!
   }
+  # type BookCount {
+  #   name: String
+  #   born: Int
+  #   bookCount: Int
+  # }
   type Mutation {
     addBook(
       title: String!
@@ -117,6 +123,7 @@ const typeDefs = gql`
       genres: [String]
     ): Book
     addAuthor(name: String!): Author
+    editAuthor(name: String!, setBornTo: Int): Author
   }
 `;
 
@@ -140,13 +147,9 @@ const resolvers = {
       // books.filter((p) => p.genres.filter((item) => item === "john")),/
       books.filter((p) => p.genres.includes(args.genre)),
     bookCount: (root, args) => {
-      if (!args.author) {
-        return books;
-      }
       const output = authors.map(({ born, name }) => {
         const bookCount = books.filter((b) => b.author === name).length;
-        console.log(bookCount, "BOOKCOUNT");
-        return { bookCount };
+        return { name, born, bookCount };
       });
     },
     authorCount: () => authors.length
@@ -161,8 +164,27 @@ const resolvers = {
       const author = { ...args, id: uuid() };
       authors = authors.concat(author);
       return author;
+    },
+    editAuthor: (root, args) => {
+      const author = authors.find((author) => author.name === args.name);
+      if (!author) return null;
+      author.born = args.setBornTo;
+      return author;
     }
   }
+  // BookCount: {
+  //   countBooks: (root, args) => {
+  //     let result = {};
+  //     for (let item of books) {
+  //       if (!results[item.author]) {
+  //         results[item.author] = 1;
+  //       } else {
+  //         results[item.author]++;
+  //       }
+  //       return result;
+  //     }
+  //   }
+  // }
 };
 
 const server = new ApolloServer({

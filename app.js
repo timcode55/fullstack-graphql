@@ -147,7 +147,7 @@ const resolvers = {
         );
       } else if (args.author) {
         // return books.filter((p) => p.author === args.author);
-        return await Book.find({ author: { $exists: args.author === author } });
+        return await Book.find({ author: { $in: [args.author] } });
       } else if (args.genre) {
         return books.filter((p) => p.genres.includes(args.genre));
       } else {
@@ -160,13 +160,13 @@ const resolvers = {
         return await Book.find({ genres: { $in: [args.genre] } });
       },
     bookCount: async (root, args) => {
-      for (let item of authors) {
+      const allAuthors = await Author.find({});
+      const allBooks = await Book.find({});
+      for (let item of allAuthors) {
         // item.bookCount = books.filter((b) => b.author === item.name).length;
-        item.bookCount = await Book.find({
-          author: { $in: [item.name] }
-        }).count();
+        item.bookCount = allBooks.filter((b) => b.author === item.name).length;
       }
-      return authors;
+      return allAuthors;
     },
     authorCount: async () => await author.find({}).count()
   },
@@ -185,15 +185,34 @@ const resolvers = {
       // }
       return book;
     },
-    addAuthor: (root, args) => {
-      const author = { ...args, id: uuid() };
-      authors = authors.concat(author);
+    addAuthor: async (root, args) => {
+      const author = new Author({ ...args, id: uuid() });
+      try {
+        await author.save();
+      } catch (error) {
+        throw error;
+      }
       return author;
     },
-    editAuthor: (root, args) => {
-      const author = authors.find((author) => author.name === args.name);
+    editAuthor: async (root, args) => {
+      const author = await Author.findOneAndUpdate(
+        { name: args.name },
+        { $set: { born: args.setBornTo } },
+        { new: true },
+        function (err, doc) {
+          if (err) {
+            throw err;
+          } else {
+            console.log("Updated");
+          }
+        }
+      )
+        .clone()
+        .catch(function (err) {
+          console.log(err);
+        });
       if (!author) return null;
-      author.born = args.setBornTo;
+      // author.born = args.setBornTo;
       return author;
     }
   }

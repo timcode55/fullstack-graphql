@@ -149,7 +149,7 @@ const resolvers = {
         // return books.filter((p) => p.author === args.author);
         return await Book.find({ author: { $in: [args.author] } });
       } else if (args.genre) {
-        return books.filter((p) => p.genres.includes(args.genre));
+        return await Book.find({ genres: { $in: [args.genre] } });
       } else {
         return await book.find({});
       }
@@ -163,8 +163,33 @@ const resolvers = {
       const allAuthors = await Author.find({});
       const allBooks = await Book.find({});
       for (let item of allAuthors) {
+        console.log(item, "ITEM");
         // item.bookCount = books.filter((b) => b.author === item.name).length;
-        item.bookCount = allBooks.filter((b) => b.author === item.name).length;
+        await Author.findOneAndUpdate(
+          // { name: item.name },
+          {
+            $set: {
+              // bookCount: allBooks.filter((b) => b.author === item.name).length
+              bookCount: 2
+            }
+          },
+          { new: true },
+          function (err, doc) {
+            if (err) {
+              throw err;
+            } else {
+              console.log("Updated");
+            }
+          }
+        )
+          .clone()
+          .catch(function (err) {
+            console.log(err);
+          });
+        if (!author) return null;
+        // author.born = args.setBornTo;
+        // return updateBook;
+        // item.bookCount = allBooks.filter((b) => b.author === item.name).length;
       }
       return allAuthors;
     },

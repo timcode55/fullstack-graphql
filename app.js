@@ -2,6 +2,7 @@ const { ApolloServer, UserInputError, gql } = require("apollo-server");
 const mongoose = require("mongoose");
 const Book = require("./models/book");
 const Author = require("./models/author");
+const User = require("./models/user");
 const dotenv = require("dotenv");
 
 dotenv.config({ path: "./config.env" });
@@ -9,6 +10,10 @@ dotenv.config({ path: "./config.env" });
 const { v1: uuid } = require("uuid");
 const book = require("./models/book");
 const author = require("./models/author");
+const jwt = require("jsonwebtoken");
+const user = require("./models/user");
+
+const JWT_SECRET = "NEED_HERE_A_SECRET_KEY";
 
 let authors = [
   {
@@ -113,12 +118,22 @@ const typeDefs = gql`
     genres: [String!]!
     id: ID!
   }
+  type User {
+    username: String!
+    friends: [Author!]!
+    id: ID!
+  }
+
+  type Token {
+    value: String!
+  }
   type Query {
     allAuthors: [Author!]!
     allBooks(author: String, genre: String): [Book]
     allBooksGenre(genre: String!): [Book]
     bookCount: [Author!]!
     authorCount: Int!
+    me: [User]
   }
   # type BookCount {
   #   name: String
@@ -134,6 +149,8 @@ const typeDefs = gql`
     ): Book
     addAuthor(name: String!): Author
     editAuthor(name: String!, setBornTo: Int): Author
+    createUser(username: String!, friend: String!): User
+    login(username: String!, password: String!): Token
   }
 `;
 
@@ -193,7 +210,10 @@ const resolvers = {
       }
       return allAuthors;
     },
-    authorCount: async () => await author.find({}).count()
+    authorCount: async () => {
+      await author.find({}).count();
+    },
+    me: async () => await user.find({})
   },
   Mutation: {
     createBook: async (root, args) => {
@@ -201,13 +221,10 @@ const resolvers = {
       try {
         await book.save();
       } catch (error) {
-        throw error;
+        throw new UserInputError(error.message, {
+          invalidArgs: args
+        });
       }
-      // books = books.concat(book);
-      // const findAuthor = authors.find((item) => item.name === args.author);
-      // if (!findAuthor) {
-      //   authors = authors.concat({ name: args.author });
-      // }
       return book;
     },
     addAuthor: async (root, args) => {
@@ -215,7 +232,9 @@ const resolvers = {
       try {
         await author.save();
       } catch (error) {
-        throw error;
+        throw new UserInputError(error.message, {
+          invalidArgs: args
+        });
       }
       return author;
     },
@@ -239,6 +258,34 @@ const resolvers = {
       if (!author) return null;
       // author.born = args.setBornTo;
       return author;
+    },
+    createUser: (root, args) => {
+      const friend = Author.findOne({ name: args.friend });
+      console.log(friend, "FRIEND");
+      const user = new User({
+        username: args.username,
+        friends: [args.friend]
+      });
+
+      return user.save().catch((error) => {
+        throw new UserInputError(error.message, {
+          invalidArgs: args
+        });
+      });
+    },
+    login: async (root, args) => {
+      const user = await User.findOne({ username: args.username });
+
+      if (!user || args.password !== "secret") {
+        throw new UserInputError("wrong credentials");
+      }
+
+      const userForToken = {
+        username: user.username,
+        id: user._id
+      };
+
+      return { value: jwt.sign(userForToken, JWT_SECRET) };
     }
   }
 };

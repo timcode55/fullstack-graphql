@@ -182,28 +182,28 @@ const resolvers = {
       for (let item of allAuthors) {
         console.log(item, "ITEM");
         // item.bookCount = books.filter((b) => b.author === item.name).length;
-        await Author.findOneAndUpdate(
-          // { name: item.name },
-          {
-            $set: {
-              // bookCount: allBooks.filter((b) => b.author === item.name).length
-              bookCount: 2
-            }
-          },
-          { new: true },
-          function (err, doc) {
-            if (err) {
-              throw err;
-            } else {
-              console.log("Updated");
-            }
-          }
-        )
-          .clone()
-          .catch(function (err) {
-            console.log(err);
-          });
-        if (!author) return null;
+        // await Author.findOneAndUpdate(
+        //   // { name: item.name },
+        //   {
+        //     $set: {
+        //       // bookCount: allBooks.filter((b) => b.author === item.name).length
+        //       bookCount: 2
+        //     }
+        //   },
+        //   { new: true },
+        //   function (err, doc) {
+        //     if (err) {
+        //       throw err;
+        //     } else {
+        //       console.log("Updated");
+        //     }
+        //   }
+        // )
+        //   .clone()
+        //   .catch(function (err) {
+        //     console.log(err);
+        //   });
+        // if (!author) return null;
         // author.born = args.setBornTo;
         // return updateBook;
         // item.bookCount = allBooks.filter((b) => b.author === item.name).length;

@@ -164,7 +164,7 @@ const resolvers = {
         );
       } else if (args.author) {
         // return books.filter((p) => p.author === args.author);
-        return await Book.find({ author: { $in: [args.author] } });
+        return await Book.find({ author: { $in: [root.author] } });
       } else if (args.genre) {
         return await Book.find({ genres: { $in: [args.genre] } });
       } else {
@@ -214,6 +214,13 @@ const resolvers = {
       await author.find({}).count();
     },
     me: async () => await user.find({})
+  },
+  Book: {
+    author: async (root, args) => {
+      let result = await author.findOne({ _id: root.author });
+      console.log(result, "RESULT AUTHOR IN BOOKS");
+      return result;
+    }
   },
   Mutation: {
     createBook: async (root, args) => {

@@ -1,4 +1,9 @@
-const { ApolloServer, UserInputError, gql } = require("apollo-server");
+const {
+  ApolloServer,
+  UserInputError,
+  AuthenticationError,
+  gql
+} = require("apollo-server");
 const mongoose = require("mongoose");
 const Book = require("./models/book");
 const Author = require("./models/author");
@@ -164,7 +169,7 @@ const resolvers = {
         );
       } else if (args.author) {
         // return books.filter((p) => p.author === args.author);
-        return await Book.find({ author: { $in: [root.author] } });
+        return await Book.find({ authors: { $in: [args.author] } });
       } else if (args.genre) {
         return await Book.find({ genres: { $in: [args.genre] } });
       } else {
@@ -213,6 +218,7 @@ const resolvers = {
     authorCount: async () => {
       await author.find({}).count();
     },
+    // me: async () => await user.find({})
     me: async () => await user.find({})
   },
   Book: {
@@ -225,6 +231,7 @@ const resolvers = {
   Mutation: {
     createBook: async (root, args) => {
       const book = new Book({ ...args });
+
       try {
         await book.save();
       } catch (error) {
@@ -299,7 +306,17 @@ const resolvers = {
 
 const server = new ApolloServer({
   typeDefs,
-  resolvers
+  resolvers,
+  context: async ({ req }) => {
+    const auth = req ? req.headers.authorization : null;
+    if (auth && auth.toLowerCase().startsWith("bearer ")) {
+      const decodedToken = jwt.verify(auth.substring(7), JWT_SECRET);
+      const currentUser = await User.findById(decodedToken.id).populate(
+        "friends"
+      );
+      return { currentUser };
+    }
+  }
 });
 
 server.listen(5000).then(() => {
